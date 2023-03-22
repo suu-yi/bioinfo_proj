@@ -1,0 +1,2 @@
+# check how many uniq names of strains in pangenome
+grep ^'>' pan_genome_reference.fa | sed 's/>\(.*\)_.*\s.*/\1/' | uniq -c | wc -l

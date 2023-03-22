@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+#SBATCH -p lu32
+#SBATCH -N 1
+#SBATCH --tasks-per-node=8
+#SBATCH -t 06:00:00
+#SBATCH -J roary_run
+#SBATCH -o roary_run_%j.out
+#SBATCH -e roary_run_%j.err
+#SBATCH --mail-user=yi3446su-s@student.lu.se
+#SBATCH --mail-type=ALL
+#SBATCH --no-requeue
+
+# write this script to stdout-file useful for scripting errors
+cat $0
+
+# load required modules for roary to work
+module load GCC/10.3.0 
+module load OpenMPI/4.1.1 
+module load Roary/3.13.0
+
+# run roary: 8 threads, verbose, use mafft 
+roary -p 8 -v -e --mafft *.gff
+
+# clear modules
+
+
+##################################################################
+
+Please cite Roary if you use any of the results it produces:
+    Andrew J. Page, Carla A. Cummins, Martin Hunt, Vanessa K. Wong, Sandra Reuter, Matthew T. G. Holden, Maria Fookes, Daniel Falush, Jacqueline A. Keane, Julian Parkhill,
+	"Roary: Rapid large-scale prokaryote pan genome analysis", Bioinformatics, 2015 Nov 15;31(22):3691-3693
+    doi: http://doi.org/10.1093/bioinformatics/btv421
+	Pubmed: 26198102
+
+Extracting proteins from /home/yisu/02_roary/GCA_000006765.1_PAO1_107.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000014625.1_UCBPP-PA14_109.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000017205.1_PA7_119.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000026645.1_LESB58_125.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000226155.1_M18_172.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000271365.1_DK2_174.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000284555.1_NCGM2S1_173.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000359505.1_B136-33_191.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000414035.1_RP73_192.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000468555.1_PAO581_495.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000468935.1_C7447m_494.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000484495.1_PAO1-VE2_493.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000484545.1_PAO1-VE13_492.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000496605.2_PA1_497.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000496645.1_PA1R_496.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000504045.1_MTB-1_210.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000508765.1_LES431_489.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000510305.1_SCV20265_215.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000524595.1_YL84_2501.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000531435.1_PA38182_7613.gff
+Extracting proteins from /home/yisu/02_roary/GCA_000829275.1_NCGM1900_2620.gff
+Combine proteins into a single file
+Iteratively run cd-hit
+Parallel all against all blast
+Cluster with MCL
+Aligning each cluster
