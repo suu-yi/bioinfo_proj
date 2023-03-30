@@ -192,10 +192,7 @@ python moblast_annot.py
 ```
 
 ### Exploring the reference genome
-
-
-
-- check R if they can make plots like the one from krona
+- Using the script from roary [link](https://github.com/sanger-pathogens/Roary/blob/21ffb84504fd55d256eca90a47e3f2f5a9012c5c/contrib/roary_plots/roary_plots.py) to explore the pangenome with plots.
 
 ```bash
 python roary_plots.py tree.file gene_presence_absence.csv --format pdf --labels
