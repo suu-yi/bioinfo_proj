@@ -1,5 +1,41 @@
 # RNA-seq analysis pipeline for *Pseudomonas aeruginosa* using pangenome reference
 
+This is an attempt to build a RNA-seq analysis pipeline for P. aeruginosa using a pangenome reference.
+
+
+```mermaid
+graph TD
+        id3[NCBI sequence data\n.] --> id4[pan/core reference genome\n.]
+        id4 --> id5[annotation]
+  id0((raw reads)) --> id1((decontaminate))
+        id1 --> id2((human depleted reads))
+        id2 & id5 --> id6(mapping/alignment\n.) --> id7(normalization\n.) --> id8(quantification\n.)
+
+classDef default fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff;
+classDef ref fill:#f96;
+classDef de fill:#A2D9CE;
+class id3,id4,id5 ref;
+class id6,id7,id8 de;
+```
+
+```mermaid
+graph LR
+id[reference PA data\n.] --> id9[prokka\n.] --> id10[roary\n.] --> id6[pan/core\ngenome\n .] --> id11[annoated reference]
+id0((clinical samples\n.)) --> id1((kraken2)) --> id2((\nseqtk\n\n .))
+id2 --> id3((bowtie2))
+id3 --> id4((samtools))
+id4 --> id5((\nfastqc\n\n.))
+id11 & id5 --> id7(kallisto\n.) --> id8(deseq2?\n .)
+
+classDef default fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff;
+classDef ref fill:#f96;
+classDef de fill:#A2D9CE;
+class id,id6,id9,id10,id11 ref;
+class id7,id8 de;
+```
+## Introduction
+WIP
+
 ## Pan/core genome reference
 
 ### Overview
@@ -159,7 +195,7 @@ awk 'BEGIN {FS="\""}; {if ($8==21) print $2}' gene_presence_absence.csv > list_c
         - (combine the `awk` process into `fix_pan_core.py` ?)
         - (combine both py scripts?)
 
-##### Reannotate with PAtags
+#### - Reannotate with PAtags
 
 The reference pangenome file from roary is in a fasta format, with each sequence header containing a unique prokka assigned ID and 
 a gene name. Most of the gene names are also named as group_???? by prokka, and since these do not provide much information about 
@@ -187,7 +223,7 @@ seqtk subseq pan_genome_reference_simpleheader.fa list_coregene > coregenome.fa
 
 ```
 
-##### More annotations
+#### - More annotations
 
 The file of sequences that were not updated are searched through all 21 of the previously downloaded `.faa` protein files from 
 [pseudomonas.com](http://pseudomonas.com) with `diamond blastx` 
@@ -207,7 +243,7 @@ The file of sequences that were not updated are searched through all 21 of the p
     
 
 The diamond blast results output file is used to find the sequences that matched and the first hit for each sequence with identity 
-> 70% and  e-value < 0.001.
+\> 70% and  e-value < 0.001.
 
 Using `moblast_annot.py` , the prokka IDs in the reference genome are updated with the new PA tags found by diamond blast.
 
@@ -216,27 +252,16 @@ Using `moblast_annot.py` , the prokka IDs in the reference genome are updated wi
 python moblast_annot.py
 ```
 
-# Exploring the reference genome
+### Exploring the reference genome
 
-what was the roary plots thing again?
 
-- tree and matrix of pangenome (find the script that was edited to include the strain names)
-- they also had piecharts? and bargraph
+
 - check R if they can make plots like the one from krona
 
 ```bash
 python roary_plots.py tree.file gene_presence_absence.csv --format pdf --labels
 ```
 
-# PAO1, PA14, and PAK reference genome
-
-- 21 strains vs 3 strains vs 1 strain reference genome?
-
-# PAO1 reference genome
-
-```bash
-
-```
 
 ### Reproducibility
 
