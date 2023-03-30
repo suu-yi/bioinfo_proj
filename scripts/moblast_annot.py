@@ -28,10 +28,22 @@ Usage:
 
 """
 
+import argparse
+
+parser = argparse.ArgumentParser(description='Replace prokka IDs with first hit blast results')
+parser.add_argument('-b','--blast', type=str, metavar='', help='Blast format output file from diamond blastx')
+parser.add_argument('-i', '--input', type=str, metavar='', help='Input reference genome in fasta format')
+parser.add_argument('-o', '--output', type=str, metavar='', default='new_reference.fa', help='Name for your updated reference')
+
+args = parser.parse_args()
+
+
+###############################################################################
+
 names = []
 prokka2 = ''
 
-with open('blast/notag_seqs.out', 'r') as blast:
+with open(args.blast, 'r') as blast:
     for line in blast:
         ids = line.replace('\\t', '\t').split()[:3:2]
         prokka = ids[0]
@@ -39,11 +51,11 @@ with open('blast/notag_seqs.out', 'r') as blast:
             names.append(ids)
         prokka2 = prokka 
 
-out = open('newtag_pan_genome_reference_.fa', 'w')
+out = open(args.output, 'w')
 
 count = 0
 
-with open('new_pan_genome_reference.fa', 'r') as panin:
+with open(args.input, 'r') as panin:
     for line in panin:
         if line.startswith('>'):
             found = False
@@ -52,7 +64,8 @@ with open('new_pan_genome_reference.fa', 'r') as panin:
             #print(old)
             for entry in names:
                 if old == entry[0]:
-                    print(line.rstrip().replace(old, entry[1]+'\t'), file=out)
+                    print(line.rstrip().replace(old, entry[1]), file=out)
+                    print(entry[1])
                     count = count + 1
                     found = True
                     break    
