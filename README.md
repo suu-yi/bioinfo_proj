@@ -18,21 +18,6 @@ class id3,id4,id5 ref;
 class id6,id7,id8 de;
 ```
 
-```mermaid
-graph LR
-id[reference PA data\n.] --> id9[prokka\n.] --> id10[roary\n.] --> id6[pan/core\ngenome\n .] --> id11[annoated reference]
-id0((clinical samples\n.)) --> id1((kraken2)) --> id2((\nseqtk\n\n .))
-id2 --> id3((bowtie2))
-id3 --> id4((samtools))
-id4 --> id5((\nfastqc\n\n.))
-id11 & id5 --> id7(kallisto\n.) --> id8(deseq2?\n .)
-
-classDef default fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff;
-classDef ref fill:#f96;
-classDef de fill:#A2D9CE;
-class id,id6,id9,id10,id11 ref;
-class id7,id8 de;
-```
 ## Introduction
 WIP
 
@@ -66,10 +51,10 @@ WIP
 
 ### Data collection
 
-21 strains of Pseudomonas aeruginosa organisms from KEGG GENOME Database were used. The genome data were collected from GenBank 
-through the link provided by the KEGG record, and their corresponding protein sequence data were downloaded from pseudomonas.com. 
+21 strains of *Pseudomonas aeruginosa* (PA) organisms from KEGG GENOME Database were used. The genome data were collected from GenBank 
+through the link provided by the KEGG record, and their corresponding protein sequence data were downloaded from [pseudomonas.com](http://pseudomonas.com). 
 
-[PA strains](https://www.notion.so/PA-strains-c65aec72a5a34f3e8b1113c6ad871214)
+[Record of PA strains](00_data/PA_strains.csv)
 
 Retrieving files with URLs:
 
@@ -86,16 +71,6 @@ wget -i PA_AA_list.txt
 ```bash
 # SOME PREAMBLE ABOUT RENAMING FILES:
 
-# search for pseudomonas KEGG entries of complete genomes
-
-# download genome assembly from ncbi
-# use wget -i list.txt
-
-# download multiple files with wget
-# use -i flag for list of urls in a txt as input
-
-wget -i PA_AA_list.txt
-
 # rename AA protein files with loop
 # first remove the Pseudomonas_aeruginosa_ and keep the strain names for easy ref
 ls Pseudomonas* | while read line; do mv ${line} ${line#P*nosa_} ; done
@@ -108,20 +83,6 @@ sed s/(.*.[12])_.*_.*.fna/1/ genome_list.txt > genome_list.txt
 # add the strain names to ids manually, use underscore to join
 # rename AA protein files by adding the genbank ids
 cat strain_id.txt | while read line; do AA=$(echo ${line:16}.faa); mv ${AA} ${line}.faa ; done
-
-### prokka
-module add Anaconda3
-source config_conda.sh
-conda activate prokka
-
-# run prokka with .faa proteins file and .fna genome file
-prokka --kingdom Bacteria --outdir PAO1 --genus Pseudomonas --proteins --cpus 8 --prefix PAO1
-
-### looped 
-for f in *cleaned.faa ; do prokka --kingdom Bacteria --outdir $(basename ${f} _cleaned.faa) --genus Pseudomonas --notrna --proteins 
-${f} --cpus 8 --prefix $(basename ${f} _cleaned.faa) ${f:0:15}*genomic.fna ; done
-
-### issue from prokka with finding false positive trnas, use --notrna to turn off option since this will affect roary results.
 
 # simplify the .faa headers for prokka
 sed 's/ref|.*|//' Pseudomonas_aeruginosa_PAO1_107.faa
@@ -147,28 +108,6 @@ for f in 00_data/*cleaned.faa ; do prokka --kingdom Bacteria --outdir 01_prokka/
 - module installed on lunar aurora
 
 ```bash
-############ running roary with sbatch script
-
-#!/bin/bash
-#
-#SBATCH -p lu32
-#SBATCH -N 1
-#SBATCH --tasks-per-node=8
-#SBATCH -t 06:00:00
-#SBATCH -J roary_run
-#SBATCH -o roary_run_%j.out
-#SBATCH -e roary_run_%j.err
-#SBATCH --mail-user=yi3446su-s@student.lu.se
-#SBATCH --mail-type=ALL
-#SBATCH --no-requeue
-
-# write this script to stdout-file useful for scripting errors
-cat $0
-
-# load required modules for roary to work
-module load GCC/10.3.0
-module load OpenMPI/4.1.1
-module load Roary/3.13.0
 
 # run roary: 8 threads, verbose, use mafft
 roary -p 8 -v -e --mafft *.gff
