@@ -208,3 +208,154 @@ python roary_plots.py tree.file gene_presence_absence.csv --format pdf --labels
 - **seqtk:** version 1.2
 - **GNU Awk:** version 4.0.2
 - **Python:** version 3.6.6
+
+## Human reads removal from sequenced sample data
+
+### Synopsis
+
+- The sample reads listed in the table were depleted of human reads using a combination of two different methods of detecting human reads: taxonomy classification method with the software Kraken2 (version 2.1.1) and alignment method software bowtie2 (version 2.4.4).
+- The two-step method is used to ensure all human reads are removed from the samples. Different methods of detecting human reads in microbial sequencing datasets have been tested by [Bush et al.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7478626/)
+- Kraken2 software was used for the first step in detecting human reads. Using the .kraken output, the sequence ID for the reads that were not assigned by kraken2 as ‘Homo sapien’ are saved as a list and used with seqtk (version1.2) subseq command to extract non-human reads from the sample reads files.
+- The subsequent reads are then mapped to the human genome GRCh37 from NCBI using bowtie2. SAM flags are interpreted using the [Picard utility](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7478626/) in the resulting SAM file output from bowtie2. SAMtools (version 1.15.1) is used to find reads flagged as unmapped and both reads unmapped for paired-end reads. These are then extracted into gzip compressed FASTQ files, completing the second step of removing human reads.
+- A second kraken report is made for the final cleaned product.
+
+### Kraken2
+
+- version 2.1.1
+- module installed on LUNARC aurora
+- Database:
+    - The database used for kraken2 was a pre-made index (dated 12/9/2022) from the standard collection containing archae, bacteria, plasmid and human data.
+    - Index downloaded from: [https://benlangmead.github.io/aws-indexes/k2](https://benlangmead.github.io/aws-indexes/k2)
+- Running Kraken2
+    - Paired-end reads and single-end reads are processed separately
+    
+    ```bash
+    # kraken paired-end reads
+    for f in ../00_fastq/*1_001.fastq.gz;
+    do base_nm=$(basename ${f} 1_001.fastq.gz);
+    
+    kraken2 --use-names \
+            --threads 64 \
+            --db ../database/ \
+            --gzip-compressed \
+            --report ${base_nm}.report.kraken \
+            --output ${base_nm}.kraken \
+            --paired ${f} ${f%%1_001.fastq.gz}2_001.fastq.gz;
+    echo "...Finished run for ${base_nm} at $(date)";
+    done
+    
+    # kraken single-end reads
+    for f in ../00_fastq/*.gz;
+    do base_nm=$(basename ${f} .fastq.gz);
+    
+    kraken2 --use-names \
+            --threads 64 \
+            --db ../database/ \
+            --gzip-compressed \
+            --report ${base_nm}.report.kraken \
+            --output ${base_nm}.kraken \
+            ${f};
+    echo "Finished run for ${base_nm} at $(date)";
+    done
+    ```
+    
+
+### Seqtk
+
+- version 1.2
+- module installed on LUNARC aurora
+- using kraken output files, extract list of sequence ids NOT assigned as 'Homo sapiens'
+- use seqtk subseq command with list of non-human ids to extract reads from fastq
+
+```bash
+# extract seq id into list
+for file in ../kraken_results/*1_001.kraken;
+do bs_name=$(basename ${file} .kraken);
+grep -v 'Homo sapiens' ${file} | cut -f2 > list_cleaned_${bs_name};
+rm ${file};
+
+# seqtk subseq the listed ids from original fastq into new cleaned_fastq files
+seqtk subseq ../20*/${bs_name}.fastq.gz list_cleaned_${bs_name} | gzip > cleaned_${bs_name}.fastq.gz;
+# optional: remove large files to save space
+rm ../20*/${bs_name}.fastq.gz;
+echo "${bs_name} ...done at $(date)";
+done
+```
+
+### Bowtie2
+
+- version 2.4.4
+- module installed on LUNARC aurora
+- Bowtie pre-made index *H. sapiens,* GRch37
+- Running Bowtie2
+    
+    ```bash
+    # bowtie2 paired-end
+    for f in ../kraken/cleaning/*1_001.fastq.gz;
+    do bs_name=$(basename ${f} 1_001.fastq.gz);
+    bowtie2 -t -p 16 -x GRCh37/GRCh37 \
+            -1 ${f} \
+            -2 ${f%%1_001.fastq.gz}2_001.fastq.gz \
+            -S ${bs_name}.sam;
+    echo ">>>>> ${bs_name} ...done at $(date)";
+    done
+    
+    # bowtie2 single-end reads
+    for f in ../kraken/cleaning/*1_001.fastq.gz;
+    do bs_name=$(basename ${f} 1_001.fastq.gz);
+    bowtie2 -t -p 32 -x ../bowtie2/GRCh37/GRCh37 \
+            -U ${f} \
+            -S ${bs_name}.sam;
+    rm ${f};
+    echo "${bs_name} ...done at $(date)";
+    done
+    ```
+    
+
+### SAMtools
+
+- version 1.15.1
+- module installed on LUNARC aurora
+- SAMtools is utilised for the second step of removing human reads, filtering for reads unmapped to human genome using SAM output from bowtie2 and creating the final FASTQ files
+- Running SAMtools
+
+```bash
+# paired-end
+for f in ../bowtie2/cleaned*;
+do bs_name=$(basename ${f} .sam);
+# convert SAM to BAM
+samtools view -b ${f} -o ${bs_name}.bam;
+# sort in order of names
+samtools sort -n ${bs_name}.bam -o ${bs_name}.bam;
+samtools fastq -f 0x4 \
+        -1 ${bs_name}1.fastq.gz \
+        -2 ${bs_name}2.fastq.gz \
+        -0 /dev/null \
+        -s /dev/null -n ${bs_name}.bam;
+echo " ${bs_name} ...done at $(date)";
+done
+
+# single-end reads
+for f in ../bowtie2/cleaned*;
+do bs_name=$(basename ${f} .sam);
+# convert SAM to BAM
+samtools view -b ${f} -o ${bs_name}.bam;
+# optional: rm large files
+rm ${f};
+samtools fastq -f 0x4 \
+        -0 ${bs_name}1.fastq.gz \
+        -s /dev/null -n ${bs_name}.bam;
+echo " ${bs_name} ...done at $(date)";
+done
+```
+
+### FastQC
+
+- version v0.12.1
+- installed with conda
+
+```bash
+# noextract will not extract zip files
+fastqc --noextract -o fastqc seq_1.fastq.gz seq_2.fastq.gz 
+```
+
