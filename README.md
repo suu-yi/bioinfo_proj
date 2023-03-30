@@ -1,9 +1,10 @@
-# bioinfo_proj
-# Pan/core genome reference
+# RNA-seq analysis pipeline for *Pseudomonas aeruginosa* using pangenome reference
 
-# Overview
+## Pan/core genome reference
 
-## File structure
+### Overview
+
+#### File structure
 
 ```bash
 
@@ -27,7 +28,7 @@
 
 ```
 
-# Data collection
+### Data collection
 
 21 strains of Pseudomonas aeruginosa organisms from KEGG GENOME Database were used. The genome data were collected from GenBank 
 through the link provided by the KEGG record, and their corresponding protein sequence data were downloaded from pseudomonas.com. 
@@ -44,7 +45,7 @@ wget -i PA_genome_list.txt
 wget -i PA_AA_list.txt
 ```
 
-# Creating a pangenome
+### Creating a pangenome
 
 ```bash
 # SOME PREAMBLE ABOUT RENAMING FILES:
@@ -90,7 +91,7 @@ ${f} --cpus 8 --prefix $(basename ${f} _cleaned.faa) ${f:0:15}*genomic.fna ; don
 sed 's/ref|.*|//' Pseudomonas_aeruginosa_PAO1_107.faa
 ```
 
-### Prokaryotic genome annotation
+#### Prokaryotic genome annotation
 
 - **Prokka**
     - version 1.14.6
@@ -103,7 +104,7 @@ for f in 00_data/*cleaned.faa ; do prokka --kingdom Bacteria --outdir 01_prokka/
 
 ```
 
-### Creating the pangenome
+#### Creating the pangenome
 
 - **Roary**
     - version 3.13.0
@@ -137,9 +138,9 @@ module load Roary/3.13.0
 roary -p 8 -v -e --mafft *.gff
 ```
 
-## Creating reference genomes
+### Creating reference genomes
 
-### Extracting the core genome
+#### Extracting the core genome
 
 The file `gene_presence_absence.csv` contains information for each gene in the pangenome and which strains contains it. This is 
 used to extract the list of gene names in the core genome, which is then used with the python script `fix_pan_core.py` to create 
@@ -150,7 +151,7 @@ the reannotated core genome.
 awk 'BEGIN {FS="\""}; {if ($8==21) print $2}' gene_presence_absence.csv > list_coregene
 ```
 
-## Reference genome reannotation
+#### Reference genome reannotation
 
 - python scripts:
     - fix_pan_core.py
@@ -158,7 +159,7 @@ awk 'BEGIN {FS="\""}; {if ($8==21) print $2}' gene_presence_absence.csv > list_c
         - (combine the `awk` process into `fix_pan_core.py` ?)
         - (combine both py scripts?)
 
-### Reannotate with PAtags
+##### Reannotate with PAtags
 
 The reference pangenome file from roary is in a fasta format, with each sequence header containing a unique prokka assigned ID and 
 a gene name. Most of the gene names are also named as group_???? by prokka, and since these do not provide much information about 
@@ -186,7 +187,7 @@ seqtk subseq pan_genome_reference_simpleheader.fa list_coregene > coregenome.fa
 
 ```
 
-### More annotations
+##### More annotations
 
 The file of sequences that were not updated are searched through all 21 of the previously downloaded `.faa` protein files from 
 [pseudomonas.com](http://pseudomonas.com) with `diamond blastx` 
@@ -237,7 +238,7 @@ python roary_plots.py tree.file gene_presence_absence.csv --format pdf --labels
 
 ```
 
-## Reproducibility
+### Reproducibility
 
 - **GNU Wget:** version 1.14 built on linux-gnu
 - **Prokka:** version 1.14.6
