@@ -1,4 +1,4 @@
-# RNA-seq analysis pipeline for *Pseudomonas aeruginosa* using pangenome reference
+# RNA-seq analysis pipeline for *Pseudomonas aeruginosa* in clinical samples using pangenome reference
 
 This is an attempt to build a RNA-seq analysis pipeline for P. aeruginosa using a pangenome reference.
 
