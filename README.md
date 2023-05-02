@@ -1,6 +1,6 @@
 # RNA-seq analysis pipeline for *Pseudomonas aeruginosa* in clinical samples
 
-This is an attempt to build a RNA-seq analysis pipeline for P. aeruginosa using a pangenome reference.
+This is an attempt to build a RNA-seq analysis pipeline for P. aeruginosa using pangenome reference.
 
 
 ```mermaid
@@ -19,7 +19,7 @@ class id6,id7,id8 de;
 ```
 
 ## Introduction
-WIP
+This is a work in progress... only private view for now
 
 ## Pan/core genome reference
 
