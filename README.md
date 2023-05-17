@@ -359,3 +359,46 @@ done
 fastqc --noextract -o fastqc seq_1.fastq.gz seq_2.fastq.gz 
 ```
 
+### kallisto 
+
+- version 0.46.0
+- module is installed on lunarc aurora
+
+### Create the index
+
+Using the reference pan/core-genome, create the database index used by kallisto
+
+### Mapping reads to the reference
+
+The `kallisto quant` command maps the sample reads to the reference and outputs the results into their 
+corresponding directories.
+
+- **Single end reads**
+    
+    (Different command for SE reads)
+    
+
+```bash
+# load modules
+module add GCC/8.2.0-2.31.1 OpenMPI/3.1.3
+module add kallisto/0.46.0
+
+echo ">>>>>Starting step1: build kallisto index at $(date)"
+kallisto index --make-unique -i PA_pan.idx newtag_pan_genome_reference.fa
+
+echo "Done at $(date)"
+
+echo ">>>>>Starting step2: kallisto quant at $(date)"
+
+for f in ../DEMULTIPLEX_2020_19_R1_cleaned/*R1.fastq.gz;
+do bs_name=$(basename ${f} R1.fastq.gz);
+kallisto quant -i PA_pan.idx \
+        -t 16 \
+        -o ${bs_name} \
+        ${f} \
+        ${f%%R1.fastq.gz}R2.fastq.gz;
+echo "${bs_name} ...done at $(date)";
+done
+
+echo "COMPLETED at $(date)"
+```
