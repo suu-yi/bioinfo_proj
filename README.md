@@ -377,7 +377,7 @@ corresponding directories.
     
     (Different command for SE reads)
     
-
+- **Paired end**
 ```bash
 # load modules
 module add GCC/8.2.0-2.31.1 OpenMPI/3.1.3
