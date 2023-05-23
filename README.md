@@ -9,7 +9,7 @@ graph TD
         id4 --> id5[annotation]
   id0((raw reads)) --> id1((decontaminate))
         id1 --> id2((human depleted reads))
-        id2 & id5 --> id6(mapping/alignment\n.) --> id7(normalization\n.) --> id8(quantification\n.)
+        id2 & id5 --> id6(mapping/alignment\n.) --> id7(normalization\n.) --> id8(visualisation\n.)
 
 classDef default fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff;
 classDef ref fill:#f96;
@@ -222,7 +222,6 @@ python roary_plots.py tree.file gene_presence_absence.csv --format pdf --labels
 ### Kraken2
 
 - version 2.1.1
-- module installed on LUNARC aurora
 - Database:
     - The database used for kraken2 was a pre-made index (dated 12/9/2022) from the standard collection containing archae, bacteria, plasmid and human data.
     - Index downloaded from: [https://benlangmead.github.io/aws-indexes/k2](https://benlangmead.github.io/aws-indexes/k2)
@@ -263,7 +262,6 @@ python roary_plots.py tree.file gene_presence_absence.csv --format pdf --labels
 ### Seqtk
 
 - version 1.2
-- module installed on LUNARC aurora
 - using kraken output files, extract list of sequence ids NOT assigned as 'Homo sapiens'
 - use seqtk subseq command with list of non-human ids to extract reads from fastq
 
@@ -285,7 +283,6 @@ done
 ### Bowtie2
 
 - version 2.4.4
-- module installed on LUNARC aurora
 - Bowtie pre-made index *H. sapiens,* GRch37
 - Running Bowtie2
     
@@ -315,7 +312,6 @@ done
 ### SAMtools
 
 - version 1.15.1
-- module installed on LUNARC aurora
 - SAMtools is utilised for the second step of removing human reads, filtering for reads unmapped to human genome using SAM output from bowtie2 and creating the final FASTQ files
 - Running SAMtools
 
@@ -362,7 +358,7 @@ fastqc --noextract -o fastqc seq_1.fastq.gz seq_2.fastq.gz
 ### kallisto 
 
 - version 0.46.0
-- module is installed on lunarc aurora
+- module is also available on lunarc
 
 ### Create the index
 
@@ -379,9 +375,6 @@ corresponding directories.
     
 - **Paired end**
 ```bash
-# load modules
-module add GCC/8.2.0-2.31.1 OpenMPI/3.1.3
-module add kallisto/0.46.0
 
 echo ">>>>>Starting step1: build kallisto index at $(date)"
 kallisto index --make-unique -i PA_pan.idx newtag_pan_genome_reference.fa
