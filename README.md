@@ -219,6 +219,11 @@ python roary_plots.py tree.file gene_presence_absence.csv --format pdf --labels
 - The subsequent reads are then mapped to the human genome GRCh37 from NCBI using bowtie2. SAM flags are interpreted using the [Picard utility](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7478626/) in the resulting SAM file output from bowtie2. SAMtools (version 1.15.1) is used to find reads flagged as unmapped and both reads unmapped for paired-end reads. These are then extracted into gzip compressed FASTQ files, completing the second step of removing human reads.
 - A second kraken report is made for the final cleaned product.
 
+### FastQC
+Initial quality of the sequences
+MultiQC for all thge reports from fastQC
+
+
 ### Kraken2
 
 - version 2.1.1
