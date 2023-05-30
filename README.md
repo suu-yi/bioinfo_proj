@@ -220,8 +220,10 @@ python roary_plots.py tree.file gene_presence_absence.csv --format pdf --labels
 - A second kraken report is made for the final cleaned product.
 
 ### FastQC
-Initial quality of the sequences
-MultiQC for all thge reports from fastQC
+- Initial quality of the sequences
+- MultiQC for all thge reports from fastQC
+- For adapter cointamination, trim the sequences (Trimmomatic, cutadapt)
+- (sequences did not have adapter contamination...?) (to trim or not to trim... https://academic.oup.com/nargab/article/2/3/lqaa068/5901066)
 
 
 ### Kraken2
