@@ -197,7 +197,45 @@ python moblast_annot.py
 ```bash
 python roary_plots.py tree.file gene_presence_absence.csv --format pdf --labels
 ```
+### Core vs soft-core vs accessory vs shell vs cloud genome?
 
+- soft-core: strains==20 (roary)
+- accessory/shell: vaguely defined borders, so we’ll try a few options
+    - 4 ≤ strains ≤ 19 (defined by roary)
+    - 3 ≤ strains ≤ 20
+    - 11 ≤ strains ≤ 20
+- cloud: strains ≤ 3 (roary)
+
+***(there is a mislabelling in the roary_plots pie chart, summary_statistics.txt from roary should be more reliable???)*
+
+#### Creating soft-core, shell, cloud genomes
+
+Clean up the pan genome header for seqtk to work:
+
+```bash
+sed 's/>.*\s\(.*\)/>\1/' pan_genome_reference.fa > pan_genome_reference_simpleheader.fa
+```
+
+Extract the gene names from gene_presence_absence.csv and retrieve the sequences from the pan genome (with simple headers)
+
+```bash
+
+#make lists for genomes
+#awk 'BEGIN {FS="\""}; {if ($8==21) print $2}' ../gene_presence_absence.csv > list_coregene
+awk 'BEGIN {FS="\""}; {if ($8==20) print $2}' ../gene_presence_absence.csv > list_softcore
+awk 'BEGIN {FS="\""}; {if ($8<=3) print $2}' ../gene_presence_absence.csv > list_cloudgene
+awk 'BEGIN {FS="\""}; {if ($8<=19 && $8>3) print $2}' ../gene_presence_absence.csv > list_shell
+
+# load modules for seqtk
+module add GCC/5.4.0-2.26  OpenMPI/1.10.3
+module add seqtk/1.2
+
+# use seqtk subseq to extract the genes listed into another .fa file
+seqtk subseq ../pan_genome_reference_simpleheader.fa list_softcore > softcore_genes.fa
+seqtk subseq ../pan_genome_reference_simpleheader.fa list_cloudgene > cloud_genes.fa
+seqtk subseq ../pan_genome_reference_simpleheader.fa list_shell > shell_genes.fa
+
+```
 
 ### Reproducibility
 
