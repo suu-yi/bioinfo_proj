@@ -400,6 +400,38 @@ done
 fastqc --noextract -o fastqc seq_1.fastq.gz seq_2.fastq.gz 
 ```
 
+### Sample taxonomy
+#### Kraken2 - Bracken
+
+bracken comes with the install of kraken2
+
+(see kraken2 version)
+
+```bash
+# run loop for all reports:
+for f in reports/*report.kraken;
+	do python ../miniconda3/envs/kraken/bin/est_abundance.py \
+		-k database/database100mers.kmer_distrib \
+		-i $f \
+		-o $(basename $f R.report.kraken)bracken.species.txt \
+		-l S ;
+done
+```
+
+#### Krona plots
+
+- krona 2.8.1
+- conda install
+- uses kraken2 reports for input and output an .html file
+- can use multiple reports at once
+
+```bash
+ ktImportTaxonomy file1.report.kraken
+```
+
+
+## Mapping reads to the reference
+
 ### kallisto 
 
 - version 0.46.0
@@ -408,8 +440,6 @@ fastqc --noextract -o fastqc seq_1.fastq.gz seq_2.fastq.gz
 ### Create the index
 
 Using the reference pan/core-genome, create the database index used by kallisto
-
-### Mapping reads to the reference
 
 The `kallisto quant` command maps the sample reads to the reference and outputs the results into their 
 corresponding directories.
