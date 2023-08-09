@@ -9,7 +9,7 @@ graph TD
         id4 --> id5[annotation]
   id0((raw reads)) --> id1((decontaminate))
         id1 --> id2((human depleted reads))
-        id2 & id5 --> id6(mapping/alignment\n.) --> id7(normalization\n.) --> id8(visualisation\n.)
+        id2 & id5 --> id6(pseudoalignment and quantification\n.) --> id7(normalization\n.) --> id8(DEGs\n.)
 
 classDef default fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff;
 classDef ref fill:#f96;
