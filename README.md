@@ -1,15 +1,14 @@
-# RNA-seq analysis pipeline for *Pseudomonas aeruginosa* in clinical samples
-
-This is an attempt to build a RNA-seq analysis pipeline for P. aeruginosa using pangenome reference.
+### Steps in the RNA-seq analysis of P. aeruginosa using a pangenome and PAO1 reference 
+This is the documentation of codes and steps used during the BINP51 project: an overview of the pipeline is shown in the chart below and detailed steps follow below. All steps were executed using command line, except for the differential expression analysis which was done with R programming language. 
 
 
 ```mermaid
 graph TD
-        id3[NCBI sequence data\n.] --> id4[pan/core reference genome\n.]
-        id4 --> id5[annotation]
-  id0((raw reads)) --> id1((decontaminate))
-        id1 --> id2((human depleted reads))
-        id2 & id5 --> id6(pseudoalignment and quantification\n.) --> id7(normalization\n.) --> id8(DEGs\n.)
+        id3[Genomes from NCBI\n21 PA strains] --> id4[Prokka\nAnnotation]
+        id4 --> id5[Roary\nPangenome\ncreation]
+  id0((13 sample\nreads from\nSRA )) --> id1((FastQC\nand\nTrimming))
+        id1 --> id2((Human reads removal\nfrom invivo sample))
+        id2 & id5 --> id6(kallisto\nPseudoalignment\nand\nquantification) --> id7(DESeq2\nDE analysis in R)
 
 classDef default fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff;
 classDef ref fill:#f96;
@@ -18,16 +17,16 @@ class id3,id4,id5 ref;
 class id6,id7,id8 de;
 ```
 
-## Introduction
-This is a work in progress... only private view for now
 
-## Pan/core genome reference
+## Pangenome creation 
 
 ### Overview
 
-#### File structure
+
 
 ```bash
+
+# Overview of file structure to keep things organised
 
 00_data
 # nucleotide and amino acid sequences of 21 PA strains
@@ -51,19 +50,18 @@ This is a work in progress... only private view for now
 
 ### Data collection
 
-21 strains of *Pseudomonas aeruginosa* (PA) organisms from KEGG GENOME Database were used. The genome data were collected from GenBank 
-through the link provided by the KEGG record, and their corresponding protein sequence data were downloaded from [pseudomonas.com](http://pseudomonas.com). 
+21 strains of *Pseudomonas aeruginosa* (PA) organisms listed in the KEGG GENOME Database were used. The genome data were collected from NCBI through the link provided by the KEGG record, and their corresponding protein sequence data were downloaded from [pseudomonas.com](http://pseudomonas.com). 
 
-[Record of PA strains](00_data/PA_strains.csv)
 
-Retrieving files with URLs:
 
 ```bash
-# download genome assembly from ncbi
+# Download genome assembly from ncbi
 wget -i PA_genome_list.txt
 
-# get protein sequence files from pseudomonas.com
+# Protein sequence files from pseudomonas.com
 wget -i PA_AA_list.txt
+
+# txt files contains a list of urls for dowlaods 
 ```
 
 ### Creating a pangenome
@@ -131,8 +129,6 @@ awk 'BEGIN {FS="\""}; {if ($8==21) print $2}' gene_presence_absence.csv > list_c
 - python scripts:
     - fix_pan_core.py
     - moblast_annot.py
-        - (combine the `awk` process into `fix_pan_core.py` ?)
-        - (combine both py scripts?)
 
 #### - Reannotate with PAtags
 
@@ -146,9 +142,6 @@ There are some sequences which would not have PA tags from the gff files, these 
 be put into diamond later.
 
 ```bash
-# for lunarc aurora cluster: try biopython
-module add GCC/7.3.0-2.30 OpenMPI/3.1.1
-module add Biopython/1.73-Python-3.6.6
 
 # extracting core genome
 awk 'BEGIN {FS="\""}; {if ($8==21) print $2}' gene_presence_absence.csv > list_coregene
@@ -157,7 +150,6 @@ awk 'BEGIN {FS="\""}; {if ($8==21) print $2}' gene_presence_absence.csv > list_c
 python fix_pan_core.py
 
 # if using fix_pangenome_v1.py and create coregenome with seqtk
-module add seqtk/1.2
 seqtk subseq pan_genome_reference_simpleheader.fa list_coregene > coregenome.fa
 
 ```
@@ -197,16 +189,12 @@ python moblast_annot.py
 ```bash
 python roary_plots.py tree.file gene_presence_absence.csv --format pdf --labels
 ```
-### Core vs soft-core vs accessory vs shell vs cloud genome?
+### Other pangenome subsets
+Number of strains in each genome according to roary, only soft-core was used in the project:
+- soft-core: strains==20 
+- accessory/shell: 4 ≤ strains ≤ 19 
+- cloud: strains ≤ 3 
 
-- soft-core: strains==20 (roary)
-- accessory/shell: vaguely defined borders, so we’ll try a few options
-    - 4 ≤ strains ≤ 19 (defined by roary)
-    - 3 ≤ strains ≤ 20
-    - 11 ≤ strains ≤ 20
-- cloud: strains ≤ 3 (roary)
-
-***(there is a mislabelling in the roary_plots pie chart, summary_statistics.txt from roary should be more reliable???)*
 
 #### Creating soft-core, shell, cloud genomes
 
@@ -221,14 +209,11 @@ Extract the gene names from gene_presence_absence.csv and retrieve the sequences
 ```bash
 
 #make lists for genomes
-#awk 'BEGIN {FS="\""}; {if ($8==21) print $2}' ../gene_presence_absence.csv > list_coregene
+
 awk 'BEGIN {FS="\""}; {if ($8==20) print $2}' ../gene_presence_absence.csv > list_softcore
 awk 'BEGIN {FS="\""}; {if ($8<=3) print $2}' ../gene_presence_absence.csv > list_cloudgene
 awk 'BEGIN {FS="\""}; {if ($8<=19 && $8>3) print $2}' ../gene_presence_absence.csv > list_shell
 
-# load modules for seqtk
-module add GCC/5.4.0-2.26  OpenMPI/1.10.3
-module add seqtk/1.2
 
 # use seqtk subseq to extract the genes listed into another .fa file
 seqtk subseq ../pan_genome_reference_simpleheader.fa list_softcore > softcore_genes.fa
@@ -237,59 +222,62 @@ seqtk subseq ../pan_genome_reference_simpleheader.fa list_shell > shell_genes.fa
 
 ```
 
-### Reproducibility
+#### Reproducibility
 
 - **GNU Wget:** version 1.14 built on linux-gnu
 - **Prokka:** version 1.14.6
 - **Roary:** version 3.13.0
-- **DIAMOND**: version 2.1.4
+- **diamond**: version 2.1.4
 - **seqtk:** version 1.2
 - **GNU Awk:** version 4.0.2
 - **Python:** version 3.6.6
+- **Anaconda3:** version 4.12.0
 
-## Human reads removal from sequenced sample data
+## Pre-processing raw reads
 
-### Synopsis
+### Overview
+```
+# file structure for organisation and sanity sake
+00_SRA_samples
+01_fastqc
+02_trimmed
+03_kraken2
+04_seqtk
+05_bowtie2
+06_samtools
 
-- The sample reads listed in the table were depleted of human reads using a combination of two different methods of detecting human reads: taxonomy classification method with the software Kraken2 (version 2.1.1) and alignment method software bowtie2 (version 2.4.4).
-- The two-step method is used to ensure all human reads are removed from the samples. Different methods of detecting human reads in microbial sequencing datasets have been tested by [Bush et al.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7478626/)
-- Kraken2 software was used for the first step in detecting human reads. Using the .kraken output, the sequence ID for the reads that were not assigned by kraken2 as ‘Homo sapien’ are saved as a list and used with seqtk (version1.2) subseq command to extract non-human reads from the sample reads files.
-- The subsequent reads are then mapped to the human genome GRCh37 from NCBI using bowtie2. SAM flags are interpreted using the [Picard utility](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7478626/) in the resulting SAM file output from bowtie2. SAMtools (version 1.15.1) is used to find reads flagged as unmapped and both reads unmapped for paired-end reads. These are then extracted into gzip compressed FASTQ files, completing the second step of removing human reads.
-- A second kraken report is made for the final cleaned product.
+```
 
-### FastQC
-- Initial quality of the sequences
-- MultiQC for all thge reports from fastQC
-- For adapter cointamination, trim the sequences (Trimmomatic, cutadapt)
-- (sequences did not have adapter contamination...?) (to trim or not to trim... https://academic.oup.com/nargab/article/2/3/lqaa068/5901066)
+#### FastQC
 
+- version 0.12.1
+- installed with conda version 23.3.1
 
-### Kraken2
+```bash
+# noextract will not extract zip files
+fastqc --noextract -o fastqc seq_1.fastq.gz seq_2.fastq.gz 
+```
+#### TrimGalore
+- version 0.6.10
+- Adapter trimming for all raw reads and produce a fastqc report after the trim
+
+```bash
+# trim for adapters, min read length 25
+trim_galore --cores 8 --fastqc --length 25 seq_1.fastq.gz
+```
+### Human reads removal from *in vivo* sample data
+#### Kraken2
 
 - version 2.1.1
 - Database:
     - The database used for kraken2 was a pre-made index (dated 12/9/2022) from the standard collection containing archae, bacteria, plasmid and human data.
     - Index downloaded from: [https://benlangmead.github.io/aws-indexes/k2](https://benlangmead.github.io/aws-indexes/k2)
-- Running Kraken2
-    - Paired-end reads and single-end reads are processed separately
+- Running Kraken2 for single-end reads
     
     ```bash
-    # kraken paired-end reads
-    for f in ../00_fastq/*1_001.fastq.gz;
-    do base_nm=$(basename ${f} 1_001.fastq.gz);
-    
-    kraken2 --use-names \
-            --threads 64 \
-            --db ../database/ \
-            --gzip-compressed \
-            --report ${base_nm}.report.kraken \
-            --output ${base_nm}.kraken \
-            --paired ${f} ${f%%1_001.fastq.gz}2_001.fastq.gz;
-    echo "...Finished run for ${base_nm} at $(date)";
-    done
     
     # kraken single-end reads
-    for f in ../00_fastq/*.gz;
+    for f in ../*fastq.gz;
     do base_nm=$(basename ${f} .fastq.gz);
     
     kraken2 --use-names \
@@ -307,21 +295,17 @@ seqtk subseq ../pan_genome_reference_simpleheader.fa list_shell > shell_genes.fa
 ### Seqtk
 
 - version 1.2
-- using kraken output files, extract list of sequence ids NOT assigned as 'Homo sapiens'
-- use seqtk subseq command with list of non-human ids to extract reads from fastq
+- using Kraken2 output files, extract list of sequence ids NOT assigned as 'Homo sapiens'
+- use seqtk subseq command with list of non-human ids to extract reads from fastq files
 
 ```bash
 # extract seq id into list
-for file in ../kraken_results/*1_001.kraken;
+for file in ../*file1_001.kraken;
 do bs_name=$(basename ${file} .kraken);
 grep -v 'Homo sapiens' ${file} | cut -f2 > list_cleaned_${bs_name};
-rm ${file};
-
+done
 # seqtk subseq the listed ids from original fastq into new cleaned_fastq files
 seqtk subseq ../20*/${bs_name}.fastq.gz list_cleaned_${bs_name} | gzip > cleaned_${bs_name}.fastq.gz;
-# optional: remove large files to save space
-rm ../20*/${bs_name}.fastq.gz;
-echo "${bs_name} ...done at $(date)";
 done
 ```
 
@@ -329,60 +313,36 @@ done
 
 - version 2.4.4
 - Bowtie pre-made index *H. sapiens,* GRch37
-- Running Bowtie2
+- Running Bowtie2 for single-end (unpaired) reads, output .sam files
     
-    ```bash
-    # bowtie2 paired-end
-    for f in ../kraken/cleaning/*1_001.fastq.gz;
-    do bs_name=$(basename ${f} 1_001.fastq.gz);
-    bowtie2 -t -p 16 -x GRCh37/GRCh37 \
-            -1 ${f} \
-            -2 ${f%%1_001.fastq.gz}2_001.fastq.gz \
-            -S ${bs_name}.sam;
-    echo ">>>>> ${bs_name} ...done at $(date)";
-    done
-    
-    # bowtie2 single-end reads
-    for f in ../kraken/cleaning/*1_001.fastq.gz;
-    do bs_name=$(basename ${f} 1_001.fastq.gz);
-    bowtie2 -t -p 32 -x ../bowtie2/GRCh37/GRCh37 \
-            -U ${f} \
-            -S ${bs_name}.sam;
-    rm ${f};
-    echo "${bs_name} ...done at $(date)";
-    done
-    ```
+```bash
+
+# bowtie2 single-end reads
+for f in ../kraken/cleaning/*1_001.fastq.gz;
+do bs_name=$(basename ${f} 1_001.fastq.gz);
+bowtie2 -t -p 32 -x ../bowtie2/GRCh37/GRCh37 \
+        -U ${f} \
+        -S ${bs_name}.sam;
+rm ${f};
+echo "${bs_name} ...done at $(date)";
+done
+```
     
 
 ### SAMtools
 
 - version 1.15.1
 - SAMtools is utilised for the second step of removing human reads, filtering for reads unmapped to human genome using SAM output from bowtie2 and creating the final FASTQ files
-- Running SAMtools
+- Running SAMtools for single-end reads, filter 
 
 ```bash
-# paired-end
-for f in ../bowtie2/cleaned*;
-do bs_name=$(basename ${f} .sam);
-# convert SAM to BAM
-samtools view -b ${f} -o ${bs_name}.bam;
-# sort in order of names
-samtools sort -n ${bs_name}.bam -o ${bs_name}.bam;
-samtools fastq -f 0x4 \
-        -1 ${bs_name}1.fastq.gz \
-        -2 ${bs_name}2.fastq.gz \
-        -0 /dev/null \
-        -s /dev/null -n ${bs_name}.bam;
-echo " ${bs_name} ...done at $(date)";
-done
 
-# single-end reads
+# with parameters for single-end reads
 for f in ../bowtie2/cleaned*;
 do bs_name=$(basename ${f} .sam);
 # convert SAM to BAM
 samtools view -b ${f} -o ${bs_name}.bam;
-# optional: rm large files
-rm ${f};
+# filter for unmapped reads
 samtools fastq -f 0x4 \
         -0 ${bs_name}1.fastq.gz \
         -s /dev/null -n ${bs_name}.bam;
@@ -390,83 +350,50 @@ echo " ${bs_name} ...done at $(date)";
 done
 ```
 
-### FastQC
+#### Reproducibility
+- **FastQC:** version 0.12.1
+- **TrimGalore:** version 0.6.10
+- **Kraken2:** version 2.1.1
+- **seqtk:** version 1.2
+- **bowtie2:** version 2.4.4
+- **SAMtools:** version 1.15.1
+- **conda:** version 23.3.1
 
-- version v0.12.1
-- installed with conda
-
-```bash
-# noextract will not extract zip files
-fastqc --noextract -o fastqc seq_1.fastq.gz seq_2.fastq.gz 
-```
-
-### Sample taxonomy
-#### Kraken2 - Bracken
-
-bracken comes with the install of kraken2
-
-(see kraken2 version)
-
-```bash
-# run loop for all reports:
-for f in reports/*report.kraken;
-	do python ../miniconda3/envs/kraken/bin/est_abundance.py \
-		-k database/database100mers.kmer_distrib \
-		-i $f \
-		-o $(basename $f R.report.kraken)bracken.species.txt \
-		-l S ;
-done
-```
-
-#### Krona plots
-
-- krona 2.8.1
-- conda install
-- uses kraken2 reports for input and output an .html file
-- can use multiple reports at once
-
-```bash
- ktImportTaxonomy file1.report.kraken
-```
-
-
-## Mapping reads to the reference
+## Pseudoalignment of reads
 
 ### kallisto 
 
 - version 0.46.0
 - module is also available on lunarc
 
-### Create the index
 
-Using the reference pan/core-genome, create the database index used by kallisto
 
-The `kallisto quant` command maps the sample reads to the reference and outputs the results into their 
-corresponding directories.
+- Using the created pangenome/core/soft-core genome from previous steps and a PAO1 reference from Pseudomonas.com, create the kallisto database index for each
 
-- **Single end reads**
-    
-    (Different command for SE reads)
-    
-- **Paired end**
+- The `kallisto quant` command pseudoaligns the sample reads to the reference and outputs the results into their corresponding directories. This is repeated for each reference genome (i.e core, soft-core, pan, PAO1)
+
+
 ```bash
 
+# repeat for all reference genomes
 echo ">>>>>Starting step1: build kallisto index at $(date)"
-kallisto index --make-unique -i PA_pan.idx newtag_pan_genome_reference.fa
-
+kallisto index --make-unique -i PAO1_107.idx PAO1_107.ffn
 echo "Done at $(date)"
 
 echo ">>>>>Starting step2: kallisto quant at $(date)"
 
-for f in ../DEMULTIPLEX_2020_19_R1_cleaned/*R1.fastq.gz;
-do bs_name=$(basename ${f} R1.fastq.gz);
-kallisto quant -i PA_pan.idx \
+for f in SRA_samples/*fq.gz;
+do bs_name=$(basename ${f} .fq.gz);
+kallisto quant -i PAO1_107.idx \
         -t 16 \
         -o ${bs_name} \
-        ${f} \
-        ${f%%R1.fastq.gz}R2.fastq.gz;
+        -b 100 \
+        --single \
+        -l 100 \
+        -s 20 \
+        ${f} ;
 echo "${bs_name} ...done at $(date)";
 done
 
-echo "COMPLETED at $(date)"
+
 ```
