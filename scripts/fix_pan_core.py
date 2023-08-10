@@ -6,16 +6,15 @@ Created on Wed Feb  1 09:11:18 2023
 @author: su
 
 Run:
-    python fix_pangenome.py
-    or 
-    python fix_pangenome.py -i <pangenome.filename>
+    python fix_pan_core.py -i <pangenome.filename> -c <coregenome_list>
 
 Input:
     - gff files fed into roary
     - pangenome reference from roary
+    - list of gene (core or otherwise)
     
 Output:
-    - pangenome with updated headers
+    - pangenome with updated locus tag
     - list of seqs not updated
     - list of updated
     - fasta of all unknown seqs that can be used in blastx or blastn
